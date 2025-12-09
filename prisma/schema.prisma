@@ -1,0 +1,280 @@
+// schema.prisma
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id           Int       @id @default(autoincrement())
+  email        String    @unique
+  passwordHash String
+  name         String?
+  companyName  String?
+  vatNumber    String?
+  phone        String?
+  role         String    @default("CUSTOMER") 
+
+  addresses    Address[]
+  carts        Cart[]
+  orders       Order[]
+  files        File[]
+  statusLogs   OrderStatusHistory[] @relation("StatusChangedBy")
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Address {
+  id          Int         @id @default(autoincrement())
+  user        User        @relation(fields: [userId], references: [id])
+  userId      Int
+  type        String      
+  companyName String?
+  fullName    String
+  street      String
+  city        String
+  postalCode  String
+  country     String
+  isDefault   Boolean     @default(false)
+
+  ordersShipping Order[]  @relation("ShippingAddress")
+  ordersBilling  Order[]  @relation("BillingAddress")
+
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Product {
+  id          Int                  @id @default(autoincrement())
+  category    String               
+  slug        String
+  name        String
+  description String?
+  isActive    Boolean              @default(true)
+
+  optionGroups ProductOptionGroup[]
+  priceTables  PriceTable[]
+  orderItems   OrderItem[]
+  cartItems    CartItem[] // Added back relation
+
+  createdAt   DateTime             @default(now())
+  updatedAt   DateTime             @updatedAt
+
+  @@unique([category, slug])
+}
+
+model ProductOptionGroup {
+  id        Int                    @id @default(autoincrement())
+  product   Product                @relation(fields: [productId], references: [id])
+  productId Int
+
+  name      String
+  code      String
+  inputType String                 
+  sortOrder Int                    @default(0)
+
+  options   ProductOption[]
+
+  createdAt DateTime               @default(now())
+  updatedAt DateTime               @updatedAt
+
+  @@unique([productId, code])
+}
+
+model ProductOption {
+  id          Int                 @id @default(autoincrement())
+  group       ProductOptionGroup  @relation(fields: [groupId], references: [id])
+  groupId     Int
+
+  label       String
+  value       String
+  code        String?
+  priceFactor Decimal?
+  isDefault   Boolean             @default(false)
+  sortOrder   Int                 @default(0)
+
+  createdAt   DateTime            @default(now())
+  updatedAt   DateTime            @updatedAt
+
+  @@unique([groupId, value])
+}
+
+model PriceTable {
+  id         Int        @id @default(autoincrement())
+  product    Product    @relation(fields: [productId], references: [id])
+  productId  Int
+
+  name       String
+  currency   String     @default("PLN")
+  validFrom  DateTime? 
+  validTo    DateTime?
+
+  rows       PriceRow[]
+
+  createdAt  DateTime   @default(now())
+  updatedAt  DateTime   @updatedAt
+}
+
+model PriceRow {
+  id                    Int       @id @default(autoincrement())
+  priceTable            PriceTable @relation(fields: [priceTableId], references: [id])
+  priceTableId          Int
+
+  optionsCombinationHash String
+
+  quantityFrom          Int       @default(1)
+  quantityTo            Int?
+
+  unitNetPrice          Decimal
+  productionDays        Int       @default(3)
+
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+
+  @@unique([priceTableId, optionsCombinationHash, quantityFrom])
+}
+
+model Cart {
+  id        Int        @id @default(autoincrement())
+  user      User?      @relation(fields: [userId], references: [id])
+  userId    Int?
+  sessionId String?    @unique
+
+  items     CartItem[]
+
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
+}
+
+model CartItem {
+  id          Int       @id @default(autoincrement())
+  cart        Cart      @relation(fields: [cartId], references: [id])
+  cartId      Int
+
+  product     Product   @relation(fields: [productId], references: [id])
+  productId   Int
+
+  options     String    // JSON
+
+  quantity    Int       @default(1)
+  unitNetPrice Decimal
+  totalNet    Decimal
+
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+model Order {
+  id             Int          @id @default(autoincrement())
+  orderNumber    String       @unique
+  user           User         @relation(fields: [userId], references: [id])
+  userId         Int
+
+  status         String       @default("PENDING_PAYMENT")
+
+  totalNet       Decimal
+  totalVat       Decimal
+  totalGross     Decimal
+  currency       String       @default("PLN")
+
+  billingAddress  Address     @relation("BillingAddress", fields: [billingAddressId], references: [id])
+  billingAddressId Int
+
+  shippingAddress  Address     @relation("ShippingAddress", fields: [shippingAddressId], references: [id])
+  shippingAddressId Int
+
+  paymentMethod   String?
+  paymentStatus   String      @default("PENDING")
+  paymentReference String?
+
+  items          OrderItem[]
+  invoices       Invoice[]
+  statusHistory  OrderStatusHistory[]
+
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+}
+
+model OrderItem {
+  id          Int       @id @default(autoincrement())
+  order       Order     @relation(fields: [orderId], references: [id])
+  orderId     Int
+
+  product     Product   @relation(fields: [productId], references: [id])
+  productId   Int
+
+  productNameSnapshot String
+  options             String // JSON
+
+  quantity           Int     @default(1)
+  unitNetPrice       Decimal
+  totalNet           Decimal
+
+  files             File[]   @relation("OrderItemFiles")
+
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+}
+
+model File {
+  id           Int       @id @default(autoincrement())
+  user         User?     @relation(fields: [userId], references: [id])
+  userId       Int?
+
+  orderItem    OrderItem? @relation("OrderItemFiles", fields: [orderItemId], references: [id])
+  orderItemId  Int?
+
+  url          String
+  originalName String
+  mimeType     String
+  size         Int
+  usage        String    @default("ARTWORK")
+
+  invoice      Invoice?
+
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Invoice {
+  id            Int          @id @default(autoincrement())
+  order         Order        @relation(fields: [orderId], references: [id])
+  orderId       Int
+
+  invoiceNumber String       @unique
+  issueDate     DateTime
+
+  totalNet      Decimal
+  totalVat      Decimal
+  totalGross    Decimal
+  currency      String       @default("PLN")
+
+  status        String       @default("ISSUED")
+
+  file          File         @relation(fields: [fileId], references: [id])
+  fileId        Int          @unique
+
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+model OrderStatusHistory {
+  id          Int         @id @default(autoincrement())
+  order       Order       @relation(fields: [orderId], references: [id])
+  orderId     Int
+
+  fromStatus  String?
+  toStatus    String
+
+  changedBy   User?       @relation("StatusChangedBy", fields: [changedByUserId], references: [id])
+  changedByUserId Int?
+
+  comment     String?
+
+  createdAt   DateTime    @default(now())
+}

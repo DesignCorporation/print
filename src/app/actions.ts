@@ -1,0 +1,133 @@
+'use server';
+
+import { PrismaClient } from '@prisma/client';
+import { CartItem } from '@/lib/store';
+import Stripe from 'stripe';
+
+const prisma = new PrismaClient();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
+  apiVersion: '2023-10-16' as any, // Cast to any to avoid strict version check fail on build without install
+});
+
+type CheckoutData = {
+  email: string;
+  name: string;
+  companyName?: string;
+  nip?: string;
+  phone: string;
+  street: string;
+  city: string;
+  postalCode: string;
+  cartItems: CartItem[];
+  totalPrice: number;
+};
+
+export async function createOrder(data: CheckoutData) {
+  try {
+    // 1. Find or Create User (Simplified logic)
+    let user = await prisma.user.findUnique({ where: { email: data.email } });
+    
+    if (!user) {
+      user = await prisma.user.create({
+        data: {
+          email: data.email,
+          name: data.name,
+          companyName: data.companyName,
+          vatNumber: data.nip,
+          phone: data.phone,
+          passwordHash: 'placeholder',
+          role: 'CUSTOMER'
+        }
+      });
+    }
+
+    // 2. Create Address
+    const address = await prisma.address.create({
+      data: {
+        userId: user.id,
+        type: 'SHIPPING',
+        fullName: data.name,
+        companyName: data.companyName,
+        street: data.street,
+        city: data.city,
+        postalCode: data.postalCode,
+        country: 'Poland'
+      }
+    });
+
+    // 3. Create Order
+    const orderNumber = `PD-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${Math.floor(Math.random()*10000)}`;
+    
+    const totalNet = data.totalPrice;
+    const totalVat = totalNet * 0.23;
+    const totalGross = totalNet + totalVat;
+
+    const order = await prisma.order.create({
+      data: {
+        orderNumber,
+        userId: user.id,
+        status: 'PENDING_PAYMENT',
+        totalNet,
+        totalVat,
+        totalGross,
+        billingAddressId: address.id,
+        shippingAddressId: address.id,
+        items: {
+          create: data.cartItems.map(item => ({
+            productId: 1, 
+            productNameSnapshot: item.title,
+            options: JSON.stringify(item.options),
+            quantity: item.quantity,
+            unitNetPrice: item.price,
+            totalNet: item.price 
+          }))
+        }
+      }
+    });
+
+    return { success: true, orderId: order.id, orderNumber };
+
+  } catch (error) {
+    console.error('Order creation failed:', error);
+    return { success: false, error: 'Failed to create order' };
+  }
+}
+
+export async function createStripeSession(orderId: number) {
+  try {
+    const order = await prisma.order.findUnique({
+      where: { id: orderId },
+      include: { items: true, user: true }
+    });
+
+    if (!order) throw new Error('Order not found');
+
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: order.items.map(item => ({
+        price_data: {
+          currency: 'pln',
+          product_data: {
+            name: item.productNameSnapshot,
+            description: `Options: ${item.options}`,
+          },
+          unit_amount: Math.round(Number(item.totalNet) * 1.23 * 100), // Gross price in cents
+        },
+        quantity: item.quantity,
+      })),
+      mode: 'payment',
+      success_url: `${process.env.NEXT_PUBLIC_API_URL}/order-success?id=${order.orderNumber}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${process.env.NEXT_PUBLIC_API_URL}/checkout?canceled=true`,
+      metadata: {
+        orderId: order.id.toString(),
+        orderNumber: order.orderNumber
+      },
+      customer_email: order.user.email
+    });
+
+    return { url: session.url };
+  } catch (error) {
+    console.error('Stripe session error:', error);
+    return { error: 'Failed to init payment' };
+  }
+}
