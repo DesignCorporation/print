@@ -45,6 +45,10 @@ jobs:
             npx prisma generate
             echo "✅ Prisma client генерирован"
 
+            # 4.5. Prisma migrate
+            npx prisma migrate deploy
+            echo "✅ Миграции БД применены"
+
             # 5. Build
             npm run build
             echo "✅ Проект собран"
@@ -54,16 +58,25 @@ jobs:
             sleep 3
             echo "✅ Сервис перезагружен"
 
-            # 7. Healthcheck
-            if systemctl is-active --quiet "$SERVICE_NAME"; then
-              echo "✅ Deploy успешен! $(date)"
-            else
+            # 7. Healthcheck - проверяем сервис
+            sleep 5
+            if ! systemctl is-active --quiet "$SERVICE_NAME"; then
               echo "❌ Сервис не запустился, откатываю..."
               rm -rf "$PROD_DIR"
               cp -r "$BACKUP_DIR" "$PROD_DIR"
               systemctl restart "$SERVICE_NAME"
               exit 1
             fi
+
+            # 7.5. Healthcheck - проверяем БД endpoint
+            if ! curl -f -s https://print.designcorp.eu/api/health > /dev/null 2>&1; then
+              echo "⚠️  Health endpoint недоступен, но сервис запустился"
+              echo "Проверьте логи: systemctl status $SERVICE_NAME"
+            else
+              echo "✅ Health endpoint работает"
+            fi
+
+            echo "✅ Deploy успешен! $(date)"
 
       - name: Verify Deployment
         uses: appleboy/ssh-action@v1.0.0
