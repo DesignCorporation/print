@@ -14,7 +14,13 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 
 export default async function CategoryPage({ params }: { params: { category: string } }) {
-  const products = await getProductsByCategory(params.category);
+  const category = decodeURIComponent(params.category || '').toLowerCase();
+
+  if (!category) {
+    return notFound();
+  }
+
+  const products = await getProductsByCategory(category);
 
   if (!products.length) {
     return notFound();
@@ -30,11 +36,11 @@ export default async function CategoryPage({ params }: { params: { category: str
           <span className="mx-2">/</span>
           <Link href="/products" className="hover:text-brand-600">Каталог</Link>
           <span className="mx-2">/</span>
-          <span className="text-gray-900">{CATEGORY_LABELS[params.category] || params.category}</span>
+          <span className="text-gray-900">{CATEGORY_LABELS[category] || category}</span>
         </div>
 
         <h1 className="text-3xl font-bold text-gray-900 mb-8">
-          {CATEGORY_LABELS[params.category] || params.category}
+          {CATEGORY_LABELS[category] || category}
         </h1>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
