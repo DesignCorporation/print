@@ -45,39 +45,26 @@ export function FileUpload({ onChange }: { onChange: (files: UploadedFile[]) => 
         }
 
         try {
-          const presignRes = await fetch('/api/uploads', {
+          const formData = new FormData();
+          formData.append('file', file);
+          // userId можно добавить, когда будет auth/другой идентификатор
+
+          const res = await fetch('/api/uploads', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              filename: file.name,
-              contentType: file.type || 'application/octet-stream',
-              size: file.size,
-            }),
+            body: formData,
           });
 
-          if (!presignRes.ok) {
-            const data = await presignRes.json().catch(() => ({}));
-            throw new Error(data.error || 'Не удалось подготовить загрузку');
+          if (!res.ok) {
+            const data = await res.json().catch(() => ({}));
+            throw new Error(data.error || 'Не удалось загрузить файл');
           }
 
-          const { uploadUrl, key, url } = await presignRes.json();
-
-          const putRes = await fetch(uploadUrl, {
-            method: 'PUT',
-            headers: {
-              'Content-Type': file.type || 'application/octet-stream',
-            },
-            body: file,
-          });
-
-          if (!putRes.ok) {
-            throw new Error('Ошибка при загрузке файла');
-          }
+          const { key, url, name, size: savedSize, type } = await res.json();
 
           nextFiles.push({
-            name: file.name,
-            size: file.size,
-            type: file.type,
+            name: name || file.name,
+            size: savedSize ?? file.size,
+            type: type || file.type,
             key,
             url,
           });

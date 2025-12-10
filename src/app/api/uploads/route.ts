@@ -1,9 +1,10 @@
 import { NextResponse } from 'next/server';
-import { PutObjectCommand } from '@aws-sdk/client-s3';
-import { getSignedUrl } from '@aws-sdk/s3-request-presigner';
+import { promises as fs } from 'fs';
+import path from 'path';
 import crypto from 'crypto';
-import { getR2Client, getR2PublicUrl } from '@/lib/r2';
 
+const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
+const ALLOWED_EXT = new Set(['pdf', 'ai', 'psd', 'png']);
 const ALLOWED_MIME = new Set([
   'application/pdf',
   'application/postscript',
@@ -12,56 +13,55 @@ const ALLOWED_MIME = new Set([
   'image/png',
 ]);
 
-const ALLOWED_EXT = new Set(['pdf', 'ai', 'psd', 'png']);
-const MAX_SIZE_BYTES = 50 * 1024 * 1024; // 50 MB
-
 function sanitizeFilename(name: string) {
-  return name
-    .replace(/[^\w.\-]+/g, '-')
-    .replace(/-+/g, '-')
-    .replace(/^-|-$/g, '');
+  return name.replace(/[^\w.\-]+/g, '-').replace(/-+/g, '-').replace(/^-|-$/g, '');
 }
 
 export async function POST(req: Request) {
   try {
-    if (!process.env.R2_BUCKET) {
-      return NextResponse.json({ error: 'Storage bucket is not configured' }, { status: 500 });
+    const formData = await req.formData();
+    const file = formData.get('file') as File | null;
+    const userId = (formData.get('userId') as string | null) || 'anonymous';
+
+    if (!file) {
+      return NextResponse.json({ error: 'Файл обязателен' }, { status: 400 });
     }
 
-    const body = await req.json().catch(() => ({}));
-    const { filename, contentType, size } = body as { filename?: string; contentType?: string; size?: number };
+    const size = file.size;
+    const type = file.type || 'application/octet-stream';
+    const filename = sanitizeFilename(file.name || 'file');
+    const ext = filename.split('.').pop()?.toLowerCase() || '';
 
-    if (!filename || !contentType || typeof size !== 'number') {
-      return NextResponse.json({ error: 'filename, contentType и size обязательны' }, { status: 400 });
+    if (!ALLOWED_EXT.has(ext) || !ALLOWED_MIME.has(type)) {
+      return NextResponse.json({ error: 'Недопустимый тип файла. Разрешены: PDF, AI, PSD, PNG' }, { status: 400 });
     }
 
     if (size > MAX_SIZE_BYTES) {
       return NextResponse.json({ error: 'Файл превышает 50MB' }, { status: 400 });
     }
 
-    const ext = filename.split('.').pop()?.toLowerCase() || '';
-    if (!ALLOWED_MIME.has(contentType) || !ALLOWED_EXT.has(ext)) {
-      return NextResponse.json({ error: 'Недопустимый тип файла. Разрешены: PDF, AI, PSD, PNG' }, { status: 400 });
-    }
+    const baseDir = process.env.UPLOAD_DIR || '/opt/print-designcorp/uploads';
+    const datedDir = path.join(baseDir, userId, new Date().toISOString().slice(0, 10));
+    await fs.mkdir(datedDir, { recursive: true });
 
-    const key = `uploads/${new Date().toISOString().slice(0, 10)}/${crypto.randomUUID()}-${sanitizeFilename(filename)}`;
+    const key = `${crypto.randomUUID()}-${filename}`;
+    const fullPath = path.join(datedDir, key);
 
-    const client = getR2Client();
-    const command = new PutObjectCommand({
-      Bucket: process.env.R2_BUCKET,
-      Key: key,
-      ContentType: contentType,
-    });
+    const buffer = Buffer.from(await file.arrayBuffer());
+    await fs.writeFile(fullPath, buffer);
 
-    const uploadUrl = await getSignedUrl(client, command, { expiresIn: 600 }); // 10 minutes
+    const relativeKey = path.relative(baseDir, fullPath);
+    const publicUrl = `/api/uploads/${encodeURIComponent(relativeKey)}`;
 
     return NextResponse.json({
-      uploadUrl,
-      key,
-      url: getR2PublicUrl(key),
+      key: relativeKey,
+      url: publicUrl,
+      name: filename,
+      size,
+      type,
     });
   } catch (error) {
-    console.error('upload.presign.error', error);
-    return NextResponse.json({ error: 'Не удалось подготовить загрузку' }, { status: 500 });
+    console.error('upload.local.error', error);
+    return NextResponse.json({ error: 'Не удалось сохранить файл' }, { status: 500 });
   }
 }
