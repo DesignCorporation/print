@@ -2,6 +2,7 @@ import { headers } from 'next/headers';
 import { NextResponse } from 'next/server';
 import Stripe from 'stripe';
 import { prisma } from '@/lib/prisma';
+import { generateInvoiceForOrder } from '@/lib/invoice';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: '2023-10-16' as any,
@@ -35,6 +36,13 @@ export async function POST(req: Request) {
           paymentReference: session.payment_intent as string
         }
       });
+
+      try {
+        await generateInvoiceForOrder(parseInt(orderId));
+      } catch (err) {
+        console.error('invoice.generate.failed', err);
+      }
+
       console.log(`Order ${orderId} marked as PAID`);
     }
   }
