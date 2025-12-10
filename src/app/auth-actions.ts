@@ -3,6 +3,7 @@
 import bcrypt from 'bcrypt';
 import { prisma } from '@/lib/prisma';
 import { handleError } from '@/lib/errors';
+import { sendWelcomeEmail } from '@/lib/email';
 
 export async function registerUser(formData: FormData) {
   try {
@@ -21,13 +22,18 @@ export async function registerUser(formData: FormData) {
 
     const passwordHash = await bcrypt.hash(password, 10);
 
-    await prisma.user.create({
+    const user = await prisma.user.create({
       data: {
         email,
         passwordHash,
         name
       }
     });
+
+    // fire-and-forget welcome email
+    sendWelcomeEmail(user.email, user.name || undefined).catch((err) =>
+      console.error('Failed to send welcome email', err)
+    );
 
     return { success: true };
   } catch (error) {

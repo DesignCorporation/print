@@ -4,6 +4,7 @@ import { CartItem } from '@/lib/store';
 import { prisma } from '@/lib/prisma';
 import Stripe from 'stripe';
 import { handleError } from '@/lib/errors';
+import { sendOrderConfirmationEmail, sendOrderNotificationToAdmin } from '@/lib/email';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
   apiVersion: '2023-10-16' as any, // Cast to any to avoid strict version check fail on build without install
@@ -84,6 +85,14 @@ export async function createOrder(data: CheckoutData) {
         }
       }
     });
+
+    // fire-and-forget emails
+    sendOrderConfirmationEmail(user.email, order.orderNumber).catch((err) =>
+      console.error('Failed to send order confirmation', err)
+    );
+    sendOrderNotificationToAdmin(order.orderNumber, user.email).catch((err) =>
+      console.error('Failed to notify admin', err)
+    );
 
     return { success: true, orderId: order.id, orderNumber };
 
