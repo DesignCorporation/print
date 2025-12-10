@@ -2,6 +2,7 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
 import { getProductsByCategory } from '@/lib/products-db';
+import { notFound } from 'next/navigation';
 
 const CATEGORY_LABELS: Record<string, string> = {
   'business-cards': 'Визитки',
@@ -14,6 +15,10 @@ const CATEGORY_LABELS: Record<string, string> = {
 
 export default async function CategoryPage({ params }: { params: { category: string } }) {
   const products = await getProductsByCategory(params.category);
+
+  if (!products.length) {
+    return notFound();
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">

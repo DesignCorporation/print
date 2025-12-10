@@ -18,7 +18,7 @@ export async function getAllProducts() {
 
 export async function getProductsByCategory(category: string) {
   return prisma.product.findMany({
-    where: { category },
+    where: { category: { equals: category, mode: 'insensitive' } },
     include: {
       priceTables: {
         include: { rows: true },
@@ -33,7 +33,10 @@ export async function getProductsByCategory(category: string) {
 
 export async function getProductBySlug(category: string, slug: string) {
   return prisma.product.findFirst({
-    where: { category, slug },
+    where: {
+      category: { equals: category, mode: 'insensitive' },
+      slug,
+    },
     include: {
       optionGroups: {
         include: { options: true },
