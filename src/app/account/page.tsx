@@ -2,11 +2,9 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { PrismaClient } from '@prisma/client';
 import Link from 'next/link';
 import { Package, FileText, User } from 'lucide-react';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export default async function AccountPage() {
   const session = await getServerSession(authOptions);

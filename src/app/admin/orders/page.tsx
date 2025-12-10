@@ -1,7 +1,5 @@
-import { PrismaClient } from '@prisma/client';
 import Link from 'next/link';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export default async function AdminOrdersPage() {
   const orders = await prisma.order.findMany({

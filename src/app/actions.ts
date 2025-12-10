@@ -1,10 +1,9 @@
 'use server';
 
-import { PrismaClient } from '@prisma/client';
 import { CartItem } from '@/lib/store';
+import { prisma } from '@/lib/prisma';
 import Stripe from 'stripe';
 
-const prisma = new PrismaClient();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
   apiVersion: '2023-10-16' as any, // Cast to any to avoid strict version check fail on build without install
 });

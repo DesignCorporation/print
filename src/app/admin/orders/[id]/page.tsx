@@ -1,8 +1,6 @@
-import { PrismaClient } from '@prisma/client';
 import { updateOrderStatus } from '@/app/admin/actions';
 import { Package, Truck, CheckCircle } from 'lucide-react';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export default async function AdminOrderDetailPage({ params }: { params: { id: string } }) {
   const order = await prisma.order.findUnique({

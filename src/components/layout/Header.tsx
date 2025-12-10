@@ -1,14 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { ShoppingCart, User, Menu, Search, Package } from 'lucide-react';
+import { ShoppingCart, User, Menu, Search, Package, LogOut } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useCartStore } from '@/lib/store';
+import { signOut, useSession } from 'next-auth/react';
 
 export default function Header() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { items, totalPrice } = useCartStore();
   const [mounted, setMounted] = useState(false);
+  const { data: session, status } = useSession();
 
   useEffect(() => {
     setMounted(true);
@@ -66,15 +68,39 @@ export default function Header() {
             </div>
           </Link>
 
-          <Link href="/login" className="flex items-center gap-2 text-gray-600 hover:text-brand-600 transition-colors">
-            <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-brand-50">
-              <User size={20} />
+          {status === 'authenticated' ? (
+            <div className="flex items-center gap-4">
+              <Link href="/account" className="flex items-center gap-2 text-gray-600 hover:text-brand-600 transition-colors">
+                <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-brand-50">
+                  <User size={20} />
+                </div>
+                <div className="hidden lg:block text-left">
+                  <span className="block text-xs text-gray-500">Личный кабинет</span>
+                  <span className="block text-sm font-medium">{session.user?.name || 'Мой профиль'}</span>
+                </div>
+              </Link>
+              <button
+                onClick={() => signOut()}
+                className="flex items-center gap-2 text-gray-600 hover:text-brand-600 transition-colors"
+                type="button"
+              >
+                <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-brand-50">
+                  <LogOut size={20} />
+                </div>
+                <span className="hidden lg:block text-sm font-medium">Выйти</span>
+              </button>
             </div>
-            <div className="hidden lg:block text-left">
-              <span className="block text-xs text-gray-500">Личный кабинет</span>
-              <span className="block text-sm font-medium">Войти</span>
-            </div>
-          </Link>
+          ) : (
+            <Link href="/login" className="flex items-center gap-2 text-gray-600 hover:text-brand-600 transition-colors">
+              <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center group-hover:bg-brand-50">
+                <User size={20} />
+              </div>
+              <div className="hidden lg:block text-left">
+                <span className="block text-xs text-gray-500">Личный кабинет</span>
+                <span className="block text-sm font-medium">Войти</span>
+              </div>
+            </Link>
+          )}
         </div>
 
       </div>
