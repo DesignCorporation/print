@@ -5,10 +5,10 @@ import { Check, Info, Truck } from 'lucide-react';
 import { clsx } from 'clsx';
 import { useCartStore } from '@/lib/store';
 
-// Types (simplified)
-type OptionValue = { id: string; name: string; priceMod?: number; price?: number };
+// Types (DB-driven)
+type OptionValue = { id: string; name: string; priceMod?: number; price?: number; isDefault?: boolean };
 type OptionGroup = { id: string; name: string; type: string; values: OptionValue[] };
-type ProductData = { title: string; description: string; basePrice: number; options: OptionGroup[] };
+type ProductData = { title: string; description: string; basePrice: number; options: OptionGroup[]; productId?: number };
 
 export default function ProductConfigurator({ product }: { product: ProductData }) {
   // State for selected options: { format: '90x50', paper: '350_matt', ... }
@@ -20,7 +20,8 @@ export default function ProductConfigurator({ product }: { product: ProductData 
   useEffect(() => {
     const defaults: Record<string, string> = {};
     product.options.forEach(opt => {
-      defaults[opt.id] = opt.values[0].id;
+      const defaultVal = opt.values.find(v => v.isDefault) ?? opt.values[0];
+      defaults[opt.id] = defaultVal?.id;
     });
     setSelections(defaults);
   }, [product]);
@@ -59,11 +60,11 @@ export default function ProductConfigurator({ product }: { product: ProductData 
 
   const handleAddToCart = () => {
     addItem({
-        productId: 'business-cards', // Should come from product data really
-        title: product.title,
-        options: selections,
-        price: totalPrice,
-        quantity: 1
+      productId: product.productId ? String(product.productId) : product.title,
+      title: product.title,
+      options: selections,
+      price: totalPrice,
+      quantity: 1
     });
     alert('Товар добавлен в корзину!');
   };
