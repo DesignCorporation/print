@@ -69,7 +69,8 @@ export default function CartPage() {
                             </div>
 
                             <div className="flex flex-col items-end gap-4">
-                                <span className="font-bold text-xl text-brand-900">{item.price} zł</span>
+                                <span className="text-xs text-gray-500">шт: {item.quantity}</span>
+                                <span className="font-bold text-xl text-brand-900">{(item.price * item.quantity).toFixed(2)} zł</span>
                                 <button 
                                     onClick={() => removeItem(item.id)}
                                     className="text-red-500 hover:text-red-700 transition-colors p-2 hover:bg-red-50 rounded-lg"

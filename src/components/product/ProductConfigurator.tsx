@@ -14,7 +14,8 @@ type ProductData = { title: string; description: string; basePrice: number; opti
 export default function ProductConfigurator({ product }: { product: ProductData }) {
   // State for selected options: { format: '90x50', paper: '350_matt', ... }
   const [selections, setSelections] = useState<Record<string, string>>({});
-  const [totalPrice, setTotalPrice] = useState(0);
+  const [totalPrice, setTotalPrice] = useState(0); // line total netto
+  const [unitPrice, setUnitPrice] = useState(0); // unit netto
   const [uploadedFiles, setUploadedFiles] = useState<UploadedFileRef[]>([]);
   const addItem = useCartStore((state) => state.addItem);
 
@@ -33,6 +34,8 @@ export default function ProductConfigurator({ product }: { product: ProductData 
     if (Object.keys(selections).length === 0) return;
 
     let price = 0;
+    let unit = 0;
+    let qtyCount = 1;
     
     // 1. Find base quantity price
     const qtyOption = product.options.find(o => o.id === 'quantity');
@@ -40,8 +43,11 @@ export default function ProductConfigurator({ product }: { product: ProductData 
     
     if (selectedQty?.price) {
         price = selectedQty.price;
+        unit = selectedQty.price;
+        qtyCount = parseInt(selectedQty.id, 10) || 1;
     } else {
         price = product.basePrice;
+        unit = product.basePrice;
     }
 
     // 2. Apply modifiers
@@ -50,10 +56,13 @@ export default function ProductConfigurator({ product }: { product: ProductData 
         const val = opt.values.find(v => v.id === selections[opt.id]);
         if (val?.priceMod) {
             price *= val.priceMod;
+            unit *= val.priceMod;
         }
     });
 
-    setTotalPrice(Math.round(price));
+    const lineTotal = price * qtyCount;
+    setUnitPrice(Number(unit.toFixed(2)));
+    setTotalPrice(Number(lineTotal.toFixed(2)));
   }, [selections, product]);
 
   const handleSelect = (optionId: string, valueId: string) => {
@@ -61,12 +70,14 @@ export default function ProductConfigurator({ product }: { product: ProductData 
   };
 
   const handleAddToCart = () => {
+    const qtyVal = parseInt(selections['quantity'] || '1', 10);
+    const qtyUnits = Number.isFinite(qtyVal) && qtyVal > 0 ? qtyVal : 1;
     addItem({
       productId: product.productId ?? 0,
       title: product.title,
       options: selections,
-      price: totalPrice,
-      quantity: 1,
+      price: unitPrice,
+      quantity: qtyUnits,
       files: uploadedFiles,
     });
     alert('Товар добавлен в корзину!');

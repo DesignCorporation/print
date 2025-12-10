@@ -151,9 +151,9 @@ export async function createStripeSession(orderId: number) {
             name: item.productNameSnapshot,
             description: `Options: ${item.options}`,
           },
-          unit_amount: Math.max(200, Math.round(Number(item.totalNet) * 1.23 * 100)), // >= 2 PLN
+          unit_amount: Math.max(200, Math.round(Number(item.unitNetPrice) * 1.23 * 100)), // >= 2 PLN
         },
-        quantity: 1,
+        quantity: item.quantity,
       })),
       mode: 'payment',
       success_url: `${process.env.NEXT_PUBLIC_API_URL}/order-success?id=${order.orderNumber}&session_id={CHECKOUT_SESSION_ID}`,

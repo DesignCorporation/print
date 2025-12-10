@@ -130,7 +130,11 @@ export default function CheckoutPage() {
                             <div key={item.id} className="text-sm space-y-1 border-b border-gray-100 pb-3 last:border-0 last:pb-0">
                                 <div className="flex justify-between">
                                   <span className="font-medium text-gray-900">{item.title}</span>
-                                  <span className="font-bold">{item.price} zł</span>
+                                  <span className="font-bold">{(item.price * item.quantity).toFixed(2)} zł</span>
+                                </div>
+                                <div className="flex justify-between text-xs text-gray-500">
+                                  <span>шт: {item.quantity}</span>
+                                  <span>шт. цена: {item.price.toFixed(2)} zł</span>
                                 </div>
                                 {item.files && item.files.length > 0 && (
                                   <div className="space-y-1">
