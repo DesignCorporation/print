@@ -38,7 +38,7 @@ jobs:
             echo "✅ Код обновлён"
 
             # 3. Install deps
-            npm ci --production=false
+            npm ci --production=false --legacy-peer-deps
             echo "✅ Зависимости установлены"
 
             # 4. Prisma generate
