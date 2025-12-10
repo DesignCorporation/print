@@ -7,7 +7,7 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
 
   const order = await prisma.order.findUnique({
     where: { id: parseInt(id) },
-    include: { user: true, items: true, shippingAddress: true }
+    include: { user: true, items: { include: { files: true } }, shippingAddress: true }
   });
 
   if (!order) return <div>Order not found</div>;
@@ -50,6 +50,22 @@ export default async function AdminOrderDetailPage({ params }: { params: Promise
                             <div>
                                 <div className="font-bold">{item.productNameSnapshot}</div>
                                 <div className="text-sm text-gray-500">{item.options}</div>
+                                {item.files.length > 0 && (
+                                  <div className="mt-2 space-y-1">
+                                    <div className="text-xs font-semibold text-gray-700">Файлы:</div>
+                                    {item.files.map((file) => (
+                                      <a
+                                        key={file.id}
+                                        href={file.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-xs text-brand-600 hover:underline block"
+                                      >
+                                        {file.originalName} ({Math.round(file.size / 1024)} KB)
+                                      </a>
+                                    ))}
+                                  </div>
+                                )}
                             </div>
                             <div className="text-right">
                                 <div>{item.quantity} шт</div>

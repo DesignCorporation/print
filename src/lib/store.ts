@@ -3,11 +3,20 @@ import { persist } from 'zustand/middleware';
 
 export type CartItem = {
   id: string; // Unique ID (timestamp + random)
-  productId: string;
+  productId: number;
   title: string;
   options: Record<string, string>; // Selected options { paper: '350_matt', quantity: '100' }
   price: number;
   quantity: number; // Number of "sets" (usually 1 for printing products)
+  files?: UploadedFileRef[];
+};
+
+export type UploadedFileRef = {
+  key: string;
+  url: string;
+  name: string;
+  size: number;
+  type: string;
 };
 
 type CartState = {

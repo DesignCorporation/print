@@ -82,12 +82,24 @@ export async function createOrder(data: CheckoutData) {
         shippingAddressId: address.id,
         items: {
           create: data.cartItems.map(item => ({
-            productId: 1, 
+            productId: Number(item.productId) || 1,
             productNameSnapshot: item.title,
             options: JSON.stringify(item.options),
             quantity: item.quantity,
             unitNetPrice: item.price,
-            totalNet: item.price 
+            totalNet: item.price,
+            files: item.files && item.files.length
+              ? {
+                  create: item.files.map((file) => ({
+                    url: file.url,
+                    originalName: file.name,
+                    mimeType: file.type,
+                    size: file.size,
+                    usage: 'ARTWORK',
+                    user: { connect: { id: user.id } },
+                  })),
+                }
+              : undefined,
           }))
         }
       }

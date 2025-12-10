@@ -7,7 +7,7 @@ import type { Prisma } from '@prisma/client';
 
 type ConfigOptionValue = { id: string; name: string; priceMod?: number; price?: number };
 type ConfigOptionGroup = { id: string; name: string; type: string; values: ConfigOptionValue[] };
-type ConfigProduct = { title: string; description: string; basePrice: number; options: ConfigOptionGroup[] };
+type ConfigProduct = { title: string; description: string; basePrice: number; options: ConfigOptionGroup[]; productId?: number };
 
 function mapProductToConfigurator(product: Prisma.ProductGetPayload<{
   include: { optionGroups: { include: { options: true } }; priceTables: { include: { rows: true } } };
@@ -51,6 +51,7 @@ function mapProductToConfigurator(product: Prisma.ProductGetPayload<{
     description: product.description ?? '',
     basePrice,
     options: optionGroups,
+    productId: product.id,
   };
 }
 

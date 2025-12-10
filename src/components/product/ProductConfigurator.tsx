@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react';
 import { Check, Info, Truck } from 'lucide-react';
 import { clsx } from 'clsx';
-import { useCartStore } from '@/lib/store';
+import { useCartStore, UploadedFileRef } from '@/lib/store';
+import { FileUpload } from './FileUpload';
 
 // Types (DB-driven)
 type OptionValue = { id: string; name: string; priceMod?: number; price?: number; isDefault?: boolean };
@@ -14,6 +15,7 @@ export default function ProductConfigurator({ product }: { product: ProductData 
   // State for selected options: { format: '90x50', paper: '350_matt', ... }
   const [selections, setSelections] = useState<Record<string, string>>({});
   const [totalPrice, setTotalPrice] = useState(0);
+  const [uploadedFiles, setUploadedFiles] = useState<UploadedFileRef[]>([]);
   const addItem = useCartStore((state) => state.addItem);
 
   // Initialize defaults
@@ -60,11 +62,12 @@ export default function ProductConfigurator({ product }: { product: ProductData 
 
   const handleAddToCart = () => {
     addItem({
-      productId: product.productId ? String(product.productId) : product.title,
+      productId: product.productId ?? 0,
       title: product.title,
       options: selections,
       price: totalPrice,
-      quantity: 1
+      quantity: 1,
+      files: uploadedFiles,
     });
     alert('Товар добавлен в корзину!');
   };
@@ -88,6 +91,10 @@ export default function ProductConfigurator({ product }: { product: ProductData 
 
         {/* Options */}
         <div className="space-y-6">
+            <div className="bg-white border border-gray-200 rounded-xl p-4">
+              <FileUpload onChange={setUploadedFiles} />
+            </div>
+
             {product.options.map((opt) => (
                 <div key={opt.id}>
                     <div className="flex items-center justify-between mb-2">
