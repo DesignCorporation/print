@@ -23,10 +23,14 @@ export default async function ProfilePage() {
             <h1 className="text-2xl font-bold text-gray-900 mb-6">Профиль</h1>
 
             <form action={updateProfile} className="bg-white rounded-xl border border-gray-200 p-6 space-y-4 max-w-2xl">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <label className="flex flex-col gap-2 text-sm text-gray-700">
-                  Имя и фамилия
+                  Имя
                   <input name="name" defaultValue={user?.name || ''} className="p-3 border rounded-lg" />
+                </label>
+                <label className="flex flex-col gap-2 text-sm text-gray-700">
+                  Фамилия
+                  <input name="lastName" defaultValue={user?.lastName || ''} className="p-3 border rounded-lg" />
                 </label>
                 <label className="flex flex-col gap-2 text-sm text-gray-700">
                   Телефон
@@ -38,6 +42,10 @@ export default async function ProfilePage() {
                 <label className="flex flex-col gap-2 text-sm text-gray-700">
                   Компания
                   <input name="companyName" defaultValue={user?.companyName || ''} className="p-3 border rounded-lg" />
+                </label>
+                <label className="flex flex-col gap-2 text-sm text-gray-700">
+                  Адрес компании
+                  <input name="companyAddress" defaultValue={user?.companyAddress || ''} className="p-3 border rounded-lg" />
                 </label>
                 <label className="flex flex-col gap-2 text-sm text-gray-700">
                   NIP / VAT

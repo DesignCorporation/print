@@ -27,7 +27,7 @@ export default async function AccountPage() {
       <main className="flex-grow container mx-auto px-4 py-12">
         <div className="flex flex-col md:flex-row gap-8">
             
-            <AccountSidebar name={user?.name} email={user?.email} active="orders" />
+            <AccountSidebar name={user?.name} lastName={user?.lastName} email={user?.email} active="orders" />
 
             {/* Content */}
             <div className="flex-1">

@@ -20,7 +20,7 @@ export default async function AddressesPage() {
       <Header />
       <main className="flex-grow container mx-auto px-4 py-12">
         <div className="flex flex-col md:flex-row gap-8">
-          <AccountSidebar name={user?.name} email={user?.email} active="addresses" />
+          <AccountSidebar name={user?.name} lastName={user?.lastName} email={user?.email} active="addresses" />
 
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900 mb-6">Адреса доставки</h1>

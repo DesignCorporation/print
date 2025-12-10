@@ -14,7 +14,9 @@ model User {
   email        String    @unique
   passwordHash String
   name         String?
+  lastName     String?
   companyName  String?
+  companyAddress String?
   vatNumber    String?
   phone        String?
   role         String    @default("CUSTOMER") 

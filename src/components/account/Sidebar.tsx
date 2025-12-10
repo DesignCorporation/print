@@ -3,11 +3,12 @@ import { Package, FileText, User, MapPin, Shield } from 'lucide-react';
 
 type Props = {
   name?: string | null;
+  lastName?: string | null;
   email?: string | null;
   active: 'orders' | 'profile' | 'invoices' | 'addresses' | 'security';
 };
 
-export function AccountSidebar({ name, email, active }: Props) {
+export function AccountSidebar({ name, lastName, email, active }: Props) {
   const linkClass = (key: Props['active']) =>
     `flex items-center gap-3 px-4 py-2 rounded-lg font-medium ${
       active === key
@@ -22,7 +23,9 @@ export function AccountSidebar({ name, email, active }: Props) {
           <User size={24} />
         </div>
         <div>
-          <p className="font-bold text-gray-900">{name || 'Клиент'}</p>
+          <p className="font-bold text-gray-900">
+            {[name, lastName].filter(Boolean).join(' ') || 'Клиент'}
+          </p>
           <p className="text-xs text-gray-500">{email}</p>
         </div>
       </div>

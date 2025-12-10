@@ -23,7 +23,7 @@ export default async function InvoicesPage() {
       <Header />
       <main className="flex-grow container mx-auto px-4 py-12">
         <div className="flex flex-col md:flex-row gap-8">
-          <AccountSidebar name={user?.name} email={user?.email} active="invoices" />
+          <AccountSidebar name={user?.name} lastName={user?.lastName} email={user?.email} active="invoices" />
 
           <div className="flex-1">
             <h1 className="text-2xl font-bold text-gray-900 mb-6">Фактуры</h1>
