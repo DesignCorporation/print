@@ -8,7 +8,8 @@
     "start": "next start -p 3004",
     "lint": "next lint",
     "db:push": "prisma db push",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:seed": "ts-node --compiler-options '{\"module\":\"commonjs\"}' prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.12.1",
@@ -37,6 +38,8 @@
     "postcss": "^8",
     "prisma": "^5.12.1",
     "tailwindcss": "^3.3.0",
-    "typescript": "^5"
+    "ts-node": "^10.9.2",
+    "typescript": "^5",
+    "ts-node": "^10.9.2"
   }
 }
