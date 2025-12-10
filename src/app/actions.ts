@@ -63,12 +63,41 @@ export async function createOrder(data: CheckoutData) {
       }
     });
 
-    // 3. Create Order
-    const orderNumber = `PD-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${Math.floor(Math.random()*10000)}`;
-    
-    const totalNet = data.totalPrice;
+    // Prepare items with quantities and totals
+    const preparedItems = data.cartItems.map(item => {
+      const optionsJson = JSON.stringify(item.options);
+      const qtyVal = parseInt(item.options?.quantity || '1', 10);
+      const qtyUnits = Number.isFinite(qtyVal) && qtyVal > 0 ? qtyVal : 1;
+      const lineTotalNet = item.price * qtyUnits;
+      return {
+        productId: Number(item.productId) || 1,
+        productNameSnapshot: item.title,
+        options: optionsJson,
+        quantity: qtyUnits,
+        unitNetPrice: item.price,
+        totalNet: lineTotalNet,
+        files: item.files && item.files.length
+          ? {
+              create: item.files.map((file) => ({
+                url: file.url,
+                originalName: file.name,
+                mimeType: file.type,
+                size: file.size,
+                usage: 'ARTWORK',
+                user: { connect: { id: user.id } },
+              })),
+            }
+          : undefined,
+      };
+    });
+
+    const summedNet = preparedItems.reduce((sum, it) => sum + Number(it.totalNet || 0), 0);
+    const totalNet = summedNet;
     const totalVat = totalNet * 0.23;
     const totalGross = totalNet + totalVat;
+
+    // 3. Create Order
+    const orderNumber = `PD-${new Date().toISOString().slice(0,10).replace(/-/g,'')}-${Math.floor(Math.random()*10000)}`;
 
     const order = await prisma.order.create({
       data: {
@@ -81,26 +110,7 @@ export async function createOrder(data: CheckoutData) {
         billingAddressId: address.id,
         shippingAddressId: address.id,
         items: {
-          create: data.cartItems.map(item => ({
-            productId: Number(item.productId) || 1,
-            productNameSnapshot: item.title,
-            options: JSON.stringify(item.options),
-            quantity: item.quantity,
-            unitNetPrice: item.price,
-            totalNet: item.price,
-            files: item.files && item.files.length
-              ? {
-                  create: item.files.map((file) => ({
-                    url: file.url,
-                    originalName: file.name,
-                    mimeType: file.type,
-                    size: file.size,
-                    usage: 'ARTWORK',
-                    user: { connect: { id: user.id } },
-                  })),
-                }
-              : undefined,
-          }))
+          create: preparedItems
         }
       }
     });
@@ -141,9 +151,9 @@ export async function createStripeSession(orderId: number) {
             name: item.productNameSnapshot,
             description: `Options: ${item.options}`,
           },
-          unit_amount: Math.round(Number(item.totalNet) * 1.23 * 100), // Gross price in cents
+          unit_amount: Math.max(200, Math.round(Number(item.totalNet) * 1.23 * 100)), // >= 2 PLN
         },
-        quantity: item.quantity,
+        quantity: 1,
       })),
       mode: 'payment',
       success_url: `${process.env.NEXT_PUBLIC_API_URL}/order-success?id=${order.orderNumber}&session_id={CHECKOUT_SESSION_ID}`,
