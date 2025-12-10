@@ -22,12 +22,25 @@ export async function updateProfile(formData: FormData) {
   const lastName = (formData.get('lastName') as string) || '';
   const phone = (formData.get('phone') as string) || '';
   const companyName = (formData.get('companyName') as string) || '';
-  const companyAddress = (formData.get('companyAddress') as string) || '';
+  const companyStreet = (formData.get('companyStreet') as string) || '';
+  const companyCity = (formData.get('companyCity') as string) || '';
+  const companyPostalCode = (formData.get('companyPostalCode') as string) || '';
+  const companyCountry = (formData.get('companyCountry') as string) || '';
   const vatNumber = (formData.get('vatNumber') as string) || '';
 
   await prisma.user.update({
     where: { id: user.id },
-    data: { name, lastName, phone, companyName, companyAddress, vatNumber },
+    data: {
+      name,
+      lastName,
+      phone,
+      companyName,
+      companyStreet,
+      companyCity,
+      companyPostalCode,
+      companyCountry,
+      vatNumber,
+    },
   });
 
   revalidatePath('/account');

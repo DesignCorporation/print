@@ -44,8 +44,20 @@ export default async function ProfilePage() {
                   <input name="companyName" defaultValue={user?.companyName || ''} className="p-3 border rounded-lg" />
                 </label>
                 <label className="flex flex-col gap-2 text-sm text-gray-700">
-                  Адрес компании
-                  <input name="companyAddress" defaultValue={user?.companyAddress || ''} className="p-3 border rounded-lg" />
+                  Улица, дом, офис
+                  <input name="companyStreet" defaultValue={user?.companyStreet || ''} className="p-3 border rounded-lg" />
+                </label>
+                <label className="flex flex-col gap-2 text-sm text-gray-700">
+                  Город
+                  <input name="companyCity" defaultValue={user?.companyCity || ''} className="p-3 border rounded-lg" />
+                </label>
+                <label className="flex flex-col gap-2 text-sm text-gray-700">
+                  Индекс
+                  <input name="companyPostalCode" defaultValue={user?.companyPostalCode || ''} className="p-3 border rounded-lg" />
+                </label>
+                <label className="flex flex-col gap-2 text-sm text-gray-700">
+                  Страна
+                  <input name="companyCountry" defaultValue={user?.companyCountry || 'Poland'} className="p-3 border rounded-lg" />
                 </label>
                 <label className="flex flex-col gap-2 text-sm text-gray-700">
                   NIP / VAT
