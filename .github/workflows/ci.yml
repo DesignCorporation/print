@@ -51,7 +51,7 @@ jobs:
       - name: Prepare database
         run: |
           npx prisma migrate deploy
-          npx prisma db seed
+          npm run db:seed
 
       - name: Lint check
         run: npm run lint || true
