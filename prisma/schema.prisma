@@ -16,7 +16,10 @@ model User {
   name         String?
   lastName     String?
   companyName  String?
-  companyAddress String?
+  companyStreet String?
+  companyCity   String?
+  companyPostalCode String?
+  companyCountry String?
   vatNumber    String?
   phone        String?
   role         String    @default("CUSTOMER") 
