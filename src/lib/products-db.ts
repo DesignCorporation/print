@@ -16,6 +16,21 @@ export async function getAllProducts() {
   });
 }
 
+export async function getProductsByCategory(category: string) {
+  return prisma.product.findMany({
+    where: { category },
+    include: {
+      priceTables: {
+        include: { rows: true },
+      },
+      optionGroups: {
+        include: { options: true },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
+  });
+}
+
 export async function getProductBySlug(category: string, slug: string) {
   return prisma.product.findFirst({
     where: { category, slug },
