@@ -54,8 +54,9 @@ function mapProductToConfigurator(product: Prisma.ProductGetPayload<{
   };
 }
 
-export default async function ProductPage({ params }: { params: { category: string; slug: string } }) {
-  const product = await getProductBySlug(params.category, params.slug);
+export default async function ProductPage({ params }: { params: Promise<{ category: string; slug: string }> }) {
+  const { category, slug } = await params;
+  const product = await getProductBySlug(category, slug);
 
   if (!product) {
     return notFound();

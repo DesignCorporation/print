@@ -13,8 +13,9 @@ const CATEGORY_LABELS: Record<string, string> = {
   'stickers': 'Наклейки',
 };
 
-export default async function CategoryPage({ params }: { params: { category: string } }) {
-  const category = decodeURIComponent(params.category || '').toLowerCase();
+export default async function CategoryPage({ params }: { params: Promise<{ category: string }> }) {
+  const { category: rawCategory } = await params;
+  const category = decodeURIComponent(rawCategory || '').toLowerCase();
 
   if (!category) {
     return notFound();
