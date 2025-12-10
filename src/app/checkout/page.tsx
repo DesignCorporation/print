@@ -57,18 +57,20 @@ export default function CheckoutPage() {
         // 2. Create Stripe Session
         const stripeRes = await createStripeSession(res.orderId);
         
-        if (stripeRes.url) {
+        if (stripeRes.success && stripeRes.url) {
             clearCart();
             // Redirect to Stripe
             window.location.href = stripeRes.url;
         } else {
-            alert('Ошибка создания платежа: ' + stripeRes.error);
+            const message = !stripeRes.success && 'error' in stripeRes ? stripeRes.error : 'unknown';
+            alert('Ошибка создания платежа: ' + message);
             // Fallback to success page if payment fails init? Or stay here?
             // For now, redirect to success but warn
             router.push(`/order-success?id=${res.orderNumber}&payment=failed`);
         }
     } else {
-        alert('Ошибка при создании заказа: ' + res.error);
+        const message = !res.success && 'error' in res ? res.error : 'unknown';
+        alert('Ошибка при создании заказа: ' + message);
         setLoading(false);
     }
   }

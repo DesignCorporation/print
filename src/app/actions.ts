@@ -3,6 +3,7 @@
 import { CartItem } from '@/lib/store';
 import { prisma } from '@/lib/prisma';
 import Stripe from 'stripe';
+import { handleError } from '@/lib/errors';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
   apiVersion: '2023-10-16' as any, // Cast to any to avoid strict version check fail on build without install
@@ -87,8 +88,7 @@ export async function createOrder(data: CheckoutData) {
     return { success: true, orderId: order.id, orderNumber };
 
   } catch (error) {
-    console.error('Order creation failed:', error);
-    return { success: false, error: 'Failed to create order' };
+    return handleError(error, 'Не удалось создать заказ');
   }
 }
 
@@ -124,9 +124,8 @@ export async function createStripeSession(orderId: number) {
       customer_email: order.user.email
     });
 
-    return { url: session.url };
+    return { success: true, url: session.url };
   } catch (error) {
-    console.error('Stripe session error:', error);
-    return { error: 'Failed to init payment' };
+    return handleError(error, 'Не удалось инициировать оплату');
   }
 }
