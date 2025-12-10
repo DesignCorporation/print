@@ -1,0 +1,79 @@
+name: Deploy to Production
+
+on:
+  push:
+    branches: [ main ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Deploy to Production Server
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PRINT_SERVER_HOST }}
+          username: ${{ secrets.PRINT_SERVER_USER }}
+          key: ${{ secrets.PRINT_DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            echo "🚀 [$(date)] Начинаю production deploy для Print DesignCorp..."
+
+            PROD_DIR="/opt/print-designcorp"
+            BACKUP_DIR="/opt/print-designcorp-backup"
+            SERVICE_NAME="print-designcorp"
+
+            # 1. Backup
+            if [ -d "$PROD_DIR" ]; then
+              rm -rf "$BACKUP_DIR"
+              cp -r "$PROD_DIR" "$BACKUP_DIR"
+              echo "✅ Backup создан"
+            fi
+
+            # 2. Git pull
+            cd "$PROD_DIR"
+            git fetch origin main
+            git reset --hard origin/main
+            echo "✅ Код обновлён"
+
+            # 3. Install deps
+            npm ci --production=false
+            echo "✅ Зависимости установлены"
+
+            # 4. Prisma generate
+            npx prisma generate
+            echo "✅ Prisma client генерирован"
+
+            # 5. Build
+            npm run build
+            echo "✅ Проект собран"
+
+            # 6. Restart service
+            systemctl restart "$SERVICE_NAME"
+            sleep 3
+            echo "✅ Сервис перезагружен"
+
+            # 7. Healthcheck
+            if systemctl is-active --quiet "$SERVICE_NAME"; then
+              echo "✅ Deploy успешен! $(date)"
+            else
+              echo "❌ Сервис не запустился, откатываю..."
+              rm -rf "$PROD_DIR"
+              cp -r "$BACKUP_DIR" "$PROD_DIR"
+              systemctl restart "$SERVICE_NAME"
+              exit 1
+            fi
+
+      - name: Verify Deployment
+        uses: appleboy/ssh-action@v1.0.0
+        with:
+          host: ${{ secrets.PRINT_SERVER_HOST }}
+          username: ${{ secrets.PRINT_SERVER_USER }}
+          key: ${{ secrets.PRINT_DEPLOY_SSH_KEY }}
+          script: |
+            echo "📊 Статус сервиса:"
+            systemctl status print-designcorp --no-pager | head -10
+            echo ""
+            echo "🌐 Проверка доступности:"
+            curl -s -I https://print.designcorp.eu | head -5
