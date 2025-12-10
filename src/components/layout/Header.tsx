@@ -33,10 +33,13 @@ export default function Header() {
             <span className="font-bold text-xl tracking-tight text-brand-900">Print.DesignCorp</span>
           </Link>
 
-          <button className="hidden md:flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-brand-600 transition-colors bg-gray-100 px-4 py-2 rounded-full hover:bg-brand-50">
+          <Link
+            href="/products"
+            className="hidden md:flex items-center gap-2 text-sm font-medium text-gray-700 hover:text-brand-600 transition-colors bg-gray-100 px-4 py-2 rounded-full hover:bg-brand-50"
+          >
             <Menu size={18} />
             <span>Каталог</span>
-          </button>
+          </Link>
         </div>
 
         {/* Center: Search */}
