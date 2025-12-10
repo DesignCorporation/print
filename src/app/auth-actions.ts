@@ -5,10 +5,20 @@ import { prisma } from '@/lib/prisma';
 import { handleError } from '@/lib/errors';
 import { sendWelcomeEmail } from '@/lib/email';
 import { logger } from '@/lib/logger';
+import { checkLimit, loginLimiter } from '@/lib/rate-limit';
 
 export async function registerUser(formData: FormData) {
   try {
     const email = formData.get('email') as string;
+    if (!email) {
+      return { success: false, error: 'Заполните все поля' };
+    }
+
+    const limit = await checkLimit(loginLimiter, `register:${email}`);
+    if (!limit.success) {
+      return { success: false, error: 'Слишком много попыток. Попробуйте позже.' };
+    }
+
     const password = formData.get('password') as string;
     const name = formData.get('name') as string;
 

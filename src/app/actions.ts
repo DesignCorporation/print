@@ -6,6 +6,7 @@ import Stripe from 'stripe';
 import { handleError } from '@/lib/errors';
 import { sendOrderConfirmationEmail, sendOrderNotificationToAdmin } from '@/lib/email';
 import { logger } from '@/lib/logger';
+import { checkLimit, apiLimiter } from '@/lib/rate-limit';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
   apiVersion: '2023-10-16' as any, // Cast to any to avoid strict version check fail on build without install
@@ -26,6 +27,11 @@ type CheckoutData = {
 
 export async function createOrder(data: CheckoutData) {
   try {
+    const limit = await checkLimit(apiLimiter, `order:${data.email}`);
+    if (!limit.success) {
+      return { success: false, error: 'Слишком много запросов. Попробуйте позже.' };
+    }
+
     // 1. Find or Create User (Simplified logic)
     let user = await prisma.user.findUnique({ where: { email: data.email } });
     
