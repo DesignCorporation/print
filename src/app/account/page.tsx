@@ -3,8 +3,8 @@ import Footer from '@/components/layout/Footer';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import Link from 'next/link';
-import { Package, FileText, User } from 'lucide-react';
 import { prisma } from '@/lib/prisma';
+import { AccountSidebar } from '@/components/account/Sidebar';
 
 export default async function AccountPage() {
   const session = await getServerSession(authOptions);
@@ -27,33 +27,7 @@ export default async function AccountPage() {
       <main className="flex-grow container mx-auto px-4 py-12">
         <div className="flex flex-col md:flex-row gap-8">
             
-            {/* Sidebar */}
-            <aside className="w-full md:w-64 bg-white p-6 rounded-xl border border-gray-200 h-fit">
-                <div className="flex items-center gap-3 mb-8">
-                    <div className="w-12 h-12 bg-brand-100 rounded-full flex items-center justify-center text-brand-600">
-                        <User size={24} />
-                    </div>
-                    <div>
-                        <p className="font-bold text-gray-900">{user?.name}</p>
-                        <p className="text-xs text-gray-500">{user?.email}</p>
-                    </div>
-                </div>
-                
-                <nav className="space-y-2">
-                    <Link href="/account" className="flex items-center gap-3 px-4 py-2 bg-brand-50 text-brand-700 rounded-lg font-medium">
-                        <Package size={18} />
-                        Мои заказы
-                    </Link>
-                    <Link href="/account/profile" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">
-                        <User size={18} />
-                        Профиль
-                    </Link>
-                    <Link href="/account/invoices" className="flex items-center gap-3 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg">
-                        <FileText size={18} />
-                        Фактуры
-                    </Link>
-                </nav>
-            </aside>
+            <AccountSidebar name={user?.name} email={user?.email} active="orders" />
 
             {/* Content */}
             <div className="flex-1">
