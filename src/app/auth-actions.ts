@@ -4,6 +4,7 @@ import bcrypt from 'bcrypt';
 import { prisma } from '@/lib/prisma';
 import { handleError } from '@/lib/errors';
 import { sendWelcomeEmail } from '@/lib/email';
+import { logger } from '@/lib/logger';
 
 export async function registerUser(formData: FormData) {
   try {
@@ -30,6 +31,8 @@ export async function registerUser(formData: FormData) {
       }
     });
 
+    logger.info('user.registered', { email });
+
     // fire-and-forget welcome email
     sendWelcomeEmail(user.email, user.name || undefined).catch((err) =>
       console.error('Failed to send welcome email', err)
@@ -37,6 +40,7 @@ export async function registerUser(formData: FormData) {
 
     return { success: true };
   } catch (error) {
+    logger.error('user.register_failed', { error, email: formData.get('email') as string });
     return handleError(error, 'Не удалось зарегистрировать пользователя');
   }
 }

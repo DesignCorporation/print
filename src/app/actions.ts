@@ -5,6 +5,7 @@ import { prisma } from '@/lib/prisma';
 import Stripe from 'stripe';
 import { handleError } from '@/lib/errors';
 import { sendOrderConfirmationEmail, sendOrderNotificationToAdmin } from '@/lib/email';
+import { logger } from '@/lib/logger';
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder', {
   apiVersion: '2023-10-16' as any, // Cast to any to avoid strict version check fail on build without install
@@ -86,6 +87,8 @@ export async function createOrder(data: CheckoutData) {
       }
     });
 
+    logger.info('order.created', { orderId: order.id, orderNumber: order.orderNumber, user: user.email });
+
     // fire-and-forget emails
     sendOrderConfirmationEmail(user.email, order.orderNumber).catch((err) =>
       console.error('Failed to send order confirmation', err)
@@ -97,6 +100,7 @@ export async function createOrder(data: CheckoutData) {
     return { success: true, orderId: order.id, orderNumber };
 
   } catch (error) {
+    logger.error('order.create_failed', { error });
     return handleError(error, 'Не удалось создать заказ');
   }
 }
@@ -133,8 +137,11 @@ export async function createStripeSession(orderId: number) {
       customer_email: order.user.email
     });
 
+    logger.info('stripe.session.created', { orderId, sessionId: session.id });
+
     return { success: true, url: session.url };
   } catch (error) {
+    logger.error('stripe.session_failed', { error, orderId });
     return handleError(error, 'Не удалось инициировать оплату');
   }
 }
