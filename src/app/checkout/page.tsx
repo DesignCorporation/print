@@ -127,10 +127,28 @@ export default function CheckoutPage() {
                     <h2 className="text-xl font-bold mb-6">Ваш заказ</h2>
                     <div className="space-y-4 mb-6 max-h-60 overflow-y-auto">
                         {items.map(item => (
-                            <div key={item.id} className="flex justify-between text-sm">
-                                <span>{item.title}</span>
-                                <span className="font-bold">{item.price} zł</span>
-                            </div>
+                            <div key={item.id} className="text-sm space-y-1 border-b border-gray-100 pb-3 last:border-0 last:pb-0">
+                                <div className="flex justify-between">
+                                  <span className="font-medium text-gray-900">{item.title}</span>
+                                  <span className="font-bold">{item.price} zł</span>
+                                </div>
+                                {item.files && item.files.length > 0 && (
+                                  <div className="space-y-1">
+                                    <div className="text-xs text-gray-600">Файлы:</div>
+                                    {item.files.map((file) => (
+                                      <a
+                                        key={file.key}
+                                        href={file.url}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-xs text-brand-600 hover:underline"
+                                      >
+                                        {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                                      </a>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
                         ))}
                     </div>
                     

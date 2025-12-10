@@ -49,6 +49,22 @@ export default function CartPage() {
                                             <span>{value}</span>
                                         </div>
                                     ))}
+                                    {item.files && item.files.length > 0 && (
+                                        <div className="mt-2 space-y-1">
+                                            <div className="text-xs font-semibold text-gray-700">Файлы:</div>
+                                            {item.files.map((file) => (
+                                                <a
+                                                    key={file.key}
+                                                    href={file.url}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    className="text-xs text-brand-600 hover:underline block"
+                                                >
+                                                    {file.name} ({(file.size / 1024).toFixed(1)} KB)
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
 
