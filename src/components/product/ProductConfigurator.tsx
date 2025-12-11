@@ -61,8 +61,8 @@ export default function ProductConfigurator({ product }: { product: ProductData 
     });
 
     const lineTotal = price * qtyCount;
-    setUnitPrice(Number(unit.toFixed(2)));
-    setTotalPrice(Number(lineTotal.toFixed(2)));
+    setUnitPrice(unit);
+    setTotalPrice(lineTotal);
   }, [selections, product]);
 
   const handleSelect = (optionId: string, valueId: string) => {
@@ -197,7 +197,7 @@ export default function ProductConfigurator({ product }: { product: ProductData 
             <div className="flex items-end justify-between gap-4">
                 <div>
                     <span className="block text-sm text-gray-500">Итого (Netto):</span>
-                    <span className="block text-4xl font-bold text-brand-900">{totalPrice} zł</span>
+                    <span className="block text-4xl font-bold text-brand-900">{totalPrice.toFixed(2)} zł</span>
                     <span className="text-xs text-gray-400">+ 23% VAT = {(totalPrice * 1.23).toFixed(2)} zł</span>
                 </div>
                 <button 

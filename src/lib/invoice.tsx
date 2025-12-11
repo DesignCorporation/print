@@ -6,30 +6,6 @@ import { promises as fs } from 'fs';
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || '/opt/print-designcorp/uploads';
 
-async function toNodeBuffer(data: any): Promise<Buffer> {
-  if (Buffer.isBuffer(data)) return data;
-  if (data instanceof Uint8Array) return Buffer.from(data);
-  if (data instanceof ArrayBuffer) return Buffer.from(new Uint8Array(data));
-  if (data && typeof data.getReader === 'function') {
-    const reader = data.getReader();
-    const chunks: Uint8Array[] = [];
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      if (value) chunks.push(value);
-    }
-    const total = chunks.reduce((acc, c) => acc + c.length, 0);
-    const merged = Buffer.alloc(total);
-    let offset = 0;
-    for (const chunk of chunks) {
-      merged.set(chunk, offset);
-      offset += chunk.length;
-    }
-    return merged;
-  }
-  throw new Error('Unsupported PDF buffer type');
-}
-
 export async function generateInvoiceForOrder(orderId: number) {
   const order = await prisma.order.findUnique({
     where: { id: orderId },
@@ -91,10 +67,12 @@ export async function generateInvoiceForOrder(orderId: number) {
     />
   );
 
-  const pdfInst = pdf();
-  pdfInst.updateContainer(doc);
-  const generated = await pdfInst.toBuffer();
-  const buf = await toNodeBuffer(generated);
+  const instance = pdf();
+  instance.updateContainer(doc);
+  // toBuffer returns Uint8Array/Buffer
+  // @ts-ignore
+  const generated = await instance.toBuffer();
+  const buf = Buffer.isBuffer(generated) ? generated : Buffer.from(generated as any);
 
   const dated = issueDate.toISOString().slice(0, 10);
   const relPath = path.join('invoices', dated, `${invoiceNumber}.pdf`);
