@@ -16,7 +16,6 @@ export default async function AccountPage() {
     include: {
         orders: {
             orderBy: { createdAt: 'desc' },
-            take: 5
         }
     }
   });
