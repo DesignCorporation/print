@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { Package, FileText, User, MapPin, Shield } from 'lucide-react';
+import { Package, FileText, User, MapPin, Shield, LayoutDashboard } from 'lucide-react';
 
 type Props = {
   name?: string | null;
@@ -51,6 +51,12 @@ export function AccountSidebar({ name, lastName, email, active }: Props) {
           <Shield size={18} />
           Безопасность
         </Link>
+        {email === 'info@designcorp.eu' && (
+          <Link href="/admin/dashboard" className="flex items-center gap-3 px-4 py-2 rounded-lg font-medium text-brand-700 bg-brand-50">
+            <LayoutDashboard size={18} />
+            Админ-панель
+          </Link>
+        )}
       </nav>
     </aside>
   );

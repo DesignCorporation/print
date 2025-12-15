@@ -34,7 +34,7 @@ export default async function ProfilePage() {
                 </label>
                 <label className="flex flex-col gap-2 text-sm text-gray-700">
                   Телефон
-                  <input name="phone" defaultValue={user?.phone || ''} className="p-3 border rounded-lg" />
+                  <input name="phone" defaultValue={user?.phone || ''} className="p-3 border rounded-lg" placeholder="+48 ..." />
                 </label>
               </div>
 

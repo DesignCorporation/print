@@ -2,11 +2,13 @@ import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import Link from 'next/link';
 import { CheckCircle } from 'lucide-react';
+import ClearCartEffect from './ClearCartEffect';
 
 export default async function OrderSuccessPage({ searchParams }: { searchParams: Promise<{ id: string }> }) {
   const params = await searchParams;
   return (
     <div className="flex flex-col min-h-screen bg-gray-50">
+      <ClearCartEffect />
       <Header />
       
       <main className="flex-grow flex items-center justify-center py-20 px-4">

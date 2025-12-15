@@ -1,8 +1,10 @@
-export default function AdminDashboard() {
-  return (
-    <div className="p-8">
-      <h1 className="text-2xl font-bold mb-6">Дашборд</h1>
-      <p>Здесь будет статистика (Графики продаж, новые заказы и т.д.). Перейдите в "Заказы".</p>
-    </div>
-  );
+import { getAdminDashboardData } from '@/lib/admin-dashboard';
+import DashboardClient from './DashboardClient';
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
+export default async function AdminDashboard() {
+  const data = await getAdminDashboardData();
+  return <DashboardClient initialData={data} />;
 }

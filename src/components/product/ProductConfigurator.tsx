@@ -76,8 +76,8 @@ export default function ProductConfigurator({ product }: { product: ProductData 
       productId: product.productId ?? 0,
       title: product.title,
       options: selections,
-      price: unitPrice,
-      quantity: qtyUnits,
+      price: totalPrice, // сохраняем итоговую нетто цену за всю строку
+      quantity: 1, // количество строк в корзине (реальное количество изделий хранится в options.quantity)
       files: uploadedFiles,
     });
     alert('Товар добавлен в корзину!');

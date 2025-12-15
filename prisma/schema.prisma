@@ -41,6 +41,7 @@ model Address {
   type        String      
   companyName String?
   fullName    String
+  phone       String?
   street      String
   city        String
   postalCode  String

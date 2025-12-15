@@ -68,12 +68,15 @@ export async function changePassword(formData: FormData) {
 
 export async function addAddress(formData: FormData) {
   const user = await requireUser();
-  const fullName = (formData.get('fullName') as string) || '';
+  const firstName = ((formData.get('firstName') as string) || '').trim();
+  const lastName = ((formData.get('lastName') as string) || '').trim();
+  const fullName = [firstName, lastName].filter(Boolean).join(' ') || (formData.get('fullName') as string) || '';
   const street = (formData.get('street') as string) || '';
   const city = (formData.get('city') as string) || '';
   const postalCode = (formData.get('postalCode') as string) || '';
   const country = (formData.get('country') as string) || 'Poland';
   const companyName = (formData.get('companyName') as string) || '';
+  const phone = ((formData.get('phone') as string) || '').trim();
 
   if (!fullName || !street || !city || !postalCode) {
     throw new Error('Заполните обязательные поля');
@@ -86,6 +89,7 @@ export async function addAddress(formData: FormData) {
       userId: user.id,
       type: 'SHIPPING',
       fullName,
+      phone,
       companyName,
       street,
       city,
@@ -98,10 +102,53 @@ export async function addAddress(formData: FormData) {
   revalidatePath('/account/addresses');
 }
 
+export async function updateAddress(formData: FormData) {
+  const user = await requireUser();
+  const addressId = Number(formData.get('id'));
+  if (!addressId) throw new Error('Адрес не найден');
+
+  const firstName = ((formData.get('firstName') as string) || '').trim();
+  const lastName = ((formData.get('lastName') as string) || '').trim();
+  const fullName = [firstName, lastName].filter(Boolean).join(' ') || (formData.get('fullName') as string) || '';
+  const companyName = (formData.get('companyName') as string) || '';
+  const street = (formData.get('street') as string) || '';
+  const city = (formData.get('city') as string) || '';
+  const postalCode = (formData.get('postalCode') as string) || '';
+  const country = (formData.get('country') as string) || 'Poland';
+  const phone = ((formData.get('phone') as string) || '').trim();
+
+  await prisma.address.update({
+    where: { id: addressId, userId: user.id },
+    data: { fullName, companyName, street, city, postalCode, country, phone },
+  });
+
+  revalidatePath('/account/addresses');
+}
+
+export async function setDefaultAddress(addressId: number) {
+  const user = await requireUser();
+  const address = await prisma.address.findFirst({ where: { id: addressId, userId: user.id } });
+  if (!address) throw new Error('Адрес не найден');
+
+  await prisma.address.updateMany({ where: { userId: user.id }, data: { isDefault: false } });
+  await prisma.address.update({ where: { id: addressId }, data: { isDefault: true } });
+  revalidatePath('/account/addresses');
+}
+
 export async function deleteAddress(addressId: number) {
   const user = await requireUser();
   const address = await prisma.address.findFirst({ where: { id: addressId, userId: user.id } });
   if (!address) throw new Error('Адрес не найден');
+  const inOrders = await prisma.order.count({
+    where: {
+      OR: [{ billingAddressId: addressId }, { shippingAddressId: addressId }],
+    },
+  });
+  if (inOrders > 0) {
+    // Уже использован в заказах — не удаляем, но и не падаем
+    revalidatePath('/account/addresses');
+    return;
+  }
   await prisma.address.delete({ where: { id: addressId } });
   revalidatePath('/account/addresses');
 }

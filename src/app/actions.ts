@@ -15,12 +15,16 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || 'sk_test_placeholder'
 type CheckoutData = {
   email: string;
   name: string;
+  lastName?: string;
   companyName?: string;
   nip?: string;
   phone: string;
-  street: string;
-  city: string;
-  postalCode: string;
+  street?: string;
+  city?: string;
+  postalCode?: string;
+  addressId?: number;
+  saveAddress?: boolean;
+  addressPhone?: string;
   cartItems: CartItem[];
   totalPrice: number;
 };
@@ -40,41 +44,67 @@ export async function createOrder(data: CheckoutData) {
         data: {
           email: data.email,
           name: data.name,
+          lastName: data.lastName || null,
           companyName: data.companyName,
           vatNumber: data.nip,
-          phone: data.phone,
+          phone: data.phone || null,
           passwordHash: 'placeholder',
           role: 'CUSTOMER'
         }
       });
+    } else {
+      // обновим контактные данные по последнему вводу пользователя
+      await prisma.user.update({
+        where: { id: user.id },
+        data: {
+          name: data.name || user.name,
+          lastName: data.lastName ?? user.lastName,
+          companyName: data.companyName ?? user.companyName,
+          vatNumber: data.nip ?? user.vatNumber,
+          phone: data.phone ?? user.phone,
+        },
+      });
     }
 
-    // 2. Create Address
-    const address = await prisma.address.create({
-      data: {
-        userId: user.id,
-        type: 'SHIPPING',
-        fullName: data.name,
-        companyName: data.companyName,
-        street: data.street,
-        city: data.city,
-        postalCode: data.postalCode,
-        country: 'Poland'
+    // 2. Address: use existing or create new
+    let addressId: number;
+    if (data.addressId) {
+      const addr = await prisma.address.findFirst({ where: { id: data.addressId, userId: user.id } });
+      if (!addr) throw new Error('Адрес не найден');
+      addressId = addr.id;
+    } else {
+      if (!data.street || !data.city || !data.postalCode) {
+        throw new Error('Заполните адрес');
       }
-    });
+      const address = await prisma.address.create({
+        data: {
+          userId: user.id,
+          type: 'SHIPPING',
+          fullName: [data.name, data.lastName].filter(Boolean).join(' '),
+          companyName: data.companyName,
+          street: data.street,
+          city: data.city,
+          postalCode: data.postalCode,
+          country: 'Poland',
+          phone: data.addressPhone || data.phone || null,
+        }
+      });
+      addressId = address.id;
+    }
 
     // Prepare items with quantities and totals
     const preparedItems = data.cartItems.map(item => {
       const optionsJson = JSON.stringify(item.options);
       const qtyVal = parseInt(item.options?.quantity || '1', 10);
       const qtyUnits = Number.isFinite(qtyVal) && qtyVal > 0 ? qtyVal : 1;
-      const lineTotalNet = item.price * qtyUnits;
+      const lineTotalNet = Number(item.price) || 0;
+      const unitNet = lineTotalNet / qtyUnits;
       return {
         productId: Number(item.productId) || 1,
         productNameSnapshot: item.title,
         options: optionsJson,
-        quantity: qtyUnits,
-        unitNetPrice: item.price,
+        quantity: qtyUnits, // фактическое количество изделий
+        unitNetPrice: unitNet,
         totalNet: lineTotalNet,
         files: item.files && item.files.length
           ? {
@@ -91,8 +121,7 @@ export async function createOrder(data: CheckoutData) {
       };
     });
 
-    const summedNet = preparedItems.reduce((sum, it) => sum + Number(it.totalNet || 0), 0);
-    const totalNet = summedNet;
+    const totalNet = preparedItems.reduce((sum, it) => sum + Number(it.totalNet || 0), 0);
     const totalVat = totalNet * 0.23;
     const totalGross = totalNet + totalVat;
 
@@ -107,8 +136,8 @@ export async function createOrder(data: CheckoutData) {
         totalNet,
         totalVat,
         totalGross,
-        billingAddressId: address.id,
-        shippingAddressId: address.id,
+        billingAddressId: addressId,
+        shippingAddressId: addressId,
         items: {
           create: preparedItems
         }
@@ -144,17 +173,32 @@ export async function createStripeSession(orderId: number) {
 
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
-      line_items: order.items.map(item => ({
-        price_data: {
-          currency: 'pln',
-          product_data: {
-            name: item.productNameSnapshot,
-            description: `Options: ${item.options}`,
+      line_items: order.items.map(item => {
+        let desc = '';
+        try {
+          const parsed = JSON.parse(item.options || '{}');
+          if (parsed && typeof parsed === 'object') {
+            const parts = Object.entries(parsed).map(([k, v]) => `${k}: ${v}`);
+            desc = parts.join(', ');
+          }
+        } catch (e) {
+          desc = item.options || '';
+        }
+
+        const lineGross = Math.max(0, Number(item.totalNet) * 1.23);
+
+        return {
+          price_data: {
+            currency: 'pln',
+            product_data: {
+              name: item.productNameSnapshot,
+              description: desc || undefined,
+            },
+            unit_amount: Math.max(200, Math.round(lineGross * 100)), // минимально 2 PLN за строку
           },
-          unit_amount: Math.max(200, Math.round(Number(item.unitNetPrice) * 1.23 * 100)), // >= 2 PLN
-        },
-        quantity: item.quantity,
-      })),
+          quantity: 1,
+        };
+      }),
       mode: 'payment',
       success_url: `${process.env.NEXT_PUBLIC_API_URL}/order-success?id=${order.orderNumber}&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${process.env.NEXT_PUBLIC_API_URL}/checkout?canceled=true`,
